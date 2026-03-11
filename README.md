@@ -1,4 +1,3 @@
-# JobScreening
 # AI Resume Screening
 
 A machine learning tool that predicts candidate hire/reject outcomes from resume data and generates a fit score for a given job role. Built with scikit-learn and trained on structured resume records.

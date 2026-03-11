@@ -1,7 +1,8 @@
+# GITHUB: https://github.com/tharuk999/JobScreening
+
 import csv
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, ConfusionMatrixDisplay
@@ -27,10 +28,13 @@ def load_data(path):
 
 def encode_row(row):
     features = []
+    experience_bins = [(0, 2), (3, 5), (6, 8), (9, 10)]
 
     for skill in all_skills: # SKILLS
         features.append(1 if skill in row["Skills"] else 0)
-    features.append(row["Experience (Years)"])
+    exp = row["Experience (Years)"]
+    for low, high in experience_bins: # EXPERIENCE
+        features.append(1 if low <= exp <= high else 0)
     for edu in all_educations: # EDUCATIONS
         features.append(1 if row["Education"] == edu else 0)
     for cert in all_certs: # CERTIFICATIONS
@@ -41,9 +45,10 @@ def encode_row(row):
     return features
 
 def feature_names():
+    experience_bins = [(0, 2), (3, 5), (6, 8), (9, 10)]
     names = (
         [f"skill_{s}" for s in all_skills]
-        + ["experience"]
+        + [f"exp_{low}_{high}yr" for low, high in experience_bins]
         + [f"edu_{e}" for e in all_educations]
         + [f"cert_{c}" for c in all_certs]
         + [f"role_{r}" for r in all_jobs]
@@ -64,7 +69,7 @@ def train_model(X_train, y_train):
     X_scaled = scaler.fit_transform(X_train)
 
     model = LogisticRegression(
-        class_weight="balanced", # this is supposed to balance the data i think (basically add weights to unequal data)
+        class_weight="balanced", # this is supposed to balance the data, add more weights to the rejected data since there's less of it
         max_iter=1000,
         solver="lbfgs"
     )
@@ -114,7 +119,7 @@ def plot_hire_rate_by_role_and_edu(rows):
     for i, v in enumerate(rates_role):
         axes[0].text(i, v + 1, f"{v:.1f}%", ha="center", fontsize=9)
 
-    # — by Education
+    # - by Education
     edu_hire = {e: 0 for e in all_educations}
     edu_total = {e: 0 for e in all_educations}
     for row in rows:
@@ -257,7 +262,7 @@ def main():
         try:
             skills, experience, education, certification, job_role = get_user_input()
         except (ValueError, IndexError):
-            print("Invalid input — please try again.")
+            print("Invalid input - please try again.")
             continue
 
         score = predict_fit_score(model, scaler, skills, experience, education, certification, job_role)
@@ -265,11 +270,11 @@ def main():
         print("\n------------------------------------------------")
         print(f"\tFit Score for {job_role}: {score}%")
         if score >= 75:
-            print("Strong match — great fit for this role!")
+            print("Strong match - great fit for this role!")
         elif score >= 50:
-            print("Moderate match — some gaps to address.")
+            print("Moderate match - some gaps to address.")
         else:
-            print("Low match — consider upskilling first.")
+            print("Low match - consider upskilling first.")
         print("------------------------------------------------")
 
         again = input("\nCheck another resume? (y/n): ").strip().lower()
